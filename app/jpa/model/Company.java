@@ -2,6 +2,10 @@ package jpa.model;
 
 
 import com.google.common.base.Objects;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.TypeDefs;
+import persistence.StringJsonUserType;
 
 import javax.persistence.*;
 
@@ -10,6 +14,9 @@ import javax.persistence.*;
 @NamedQueries({
         @NamedQuery(name = "Company.getAll", query = "select c from Company c"),
         @NamedQuery(name = "Company.findByName", query = "select c from Company c where c.name like :name")
+})
+@TypeDefs({
+        @TypeDef( name= "StringJsonObject", typeClass = StringJsonUserType.class)
 })
 public class Company {
 
@@ -23,6 +30,9 @@ public class Company {
 
     @Column(name = "reg_number", unique = true, nullable = false)
     private String registrationNumber;
+
+    @Type(type = "StringJsonObject")
+    private String financialHistory;
 
     public Long getId() {
         return id;
@@ -48,12 +58,21 @@ public class Company {
         this.registrationNumber = registrationNumber;
     }
 
+    public String getFinancialHistory() {
+        return financialHistory;
+    }
+
+    public void setFinancialHistory(String financialHistory) {
+        this.financialHistory = financialHistory;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
                 .add("name", name)
                 .add("registrationNumber", registrationNumber)
+                .add("financialHistory", financialHistory)
                 .toString();
     }
 

@@ -8,6 +8,7 @@ GET           /                    controllers.Application.index
 # Company
 GET           /company             controllers.CompanyController.getAll()
 POST          /company             controllers.CompanyController.create()
+PUT           /company/finance/:id controllers.CompanyController.updateFinancialHistory(id: Long)
 PUT           /company/:id         controllers.CompanyController.update(id: Long)
 GET           /company/:id         controllers.CompanyController.get(id: Long)
 DELETE        /company/:id         controllers.CompanyController.delete(id: Long)

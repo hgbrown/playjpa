@@ -8,7 +8,7 @@
         <non-jta-data-source>DefaultDS</non-jta-data-source>
         <class>jpa.model.Company</class>
         <properties>
-            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL9Dialect"/>
+            <property name="hibernate.dialect" value="persistence.JsonPostgreSQLDialect"/>
 
             <!-- generate database schema from scripts/,metadata -->
             <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>

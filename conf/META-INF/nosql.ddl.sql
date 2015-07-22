@@ -1,6 +1,6 @@
-CREATE TABLE company ( id INT8 NOT NULL, name VARCHAR(255) NOT NULL, reg_number VARCHAR(255) NOT NULL, PRIMARY KEY (id) );
-CREATE TABLE employee ( id INT8 NOT NULL, first_name VARCHAR(255), last_name  VARCHAR(255), PRIMARY KEY (id) );
-ALTER TABLE company ADD CONSTRAINT UK_niu8sfil2gxywcru9ah3r4ec5 UNIQUE (name);
-ALTER TABLE company ADD CONSTRAINT UK_gpeuerb77ng914pedqrah5nkb UNIQUE (reg_number);
-CREATE SEQUENCE company_id_sequence;
-CREATE SEQUENCE employee_id_sequence;
+create table company (id int8 not null, financialHistory json, name varchar(255) not null, reg_number varchar(255) not null, primary key (id));
+create table employee (id int8 not null, first_name varchar(255), last_name varchar(255), primary key (id));
+alter table company add constraint UK_niu8sfil2gxywcru9ah3r4ec5  unique (name);
+alter table company add constraint UK_gpeuerb77ng914pedqrah5nkb  unique (reg_number);
+create sequence company_id_sequence;
+create sequence employee_id_sequence;

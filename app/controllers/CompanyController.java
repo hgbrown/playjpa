@@ -40,7 +40,7 @@ public class CompanyController extends Controller {
     @Transactional
     @BodyParser.Of(BodyParser.Json.class)
     public static Result create() {
-        final JsonNode jsonNode = getCompanyAsJsonFromRequest();
+        final JsonNode jsonNode = getRequestBodyAsJson();
         final Company company = convertJsonToCompany(jsonNode);
 
         if (company.getId() != null) {
@@ -54,7 +54,7 @@ public class CompanyController extends Controller {
     @Transactional
     @BodyParser.Of(BodyParser.Json.class)
     public static Result update(Long id) {
-        final JsonNode jsonNode = getCompanyAsJsonFromRequest();
+        final JsonNode jsonNode = getRequestBodyAsJson();
         final Company company = convertJsonToCompany(jsonNode);
 
         if (!id.equals(company.getId())) {
@@ -94,6 +94,19 @@ public class CompanyController extends Controller {
         return ok(Json.toJson(companies));
     }
 
+    @Transactional
+    public static Result updateFinancialHistory(Long id) {
+        final Company company = JPA.em().find(Company.class, id);
+        LOG.debug("company=[{}]", company);
+
+        final JsonNode jsonNode = getRequestBodyAsJson();
+        LOG.debug("jsonNode=[{}]", jsonNode);
+
+        company.setFinancialHistory(jsonNode.toString());
+        JPA.em().merge(company);
+        return ok();
+    }
+
     private static Company convertJsonToCompany(JsonNode jsonNode) {
         final Company company = Json.fromJson(jsonNode, Company.class);
         LOG.debug("company=[{}]", company);
@@ -101,7 +114,7 @@ public class CompanyController extends Controller {
         return company;
     }
 
-    private static JsonNode getCompanyAsJsonFromRequest() {
+    private static JsonNode getRequestBodyAsJson() {
         final Http.Request request = request();
         LOG.debug("request=[{}]", request);
 
