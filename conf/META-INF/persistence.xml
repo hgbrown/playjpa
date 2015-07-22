@@ -1,0 +1,30 @@
+<persistence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+
+    <persistence-unit name="defaultPersistenceUnit" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <non-jta-data-source>DefaultDS</non-jta-data-source>
+        <class>jpa.model.Company</class>
+        <properties>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL9Dialect"/>
+
+            <!-- generate database schema from scripts/,metadata -->
+            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <!--<property name="javax.persistence.schema-generation.create-source" value="metadata"/>-->
+            <property name="javax.persistence.schema-generation.create-source" value="script"/>
+            <property name="javax.persistence.schema-generation.create-script-source"
+                      value="conf/META-INF/nosql.ddl.sql"/>
+
+            <!-- location to a SQL file to load data into the database -->
+            <property name="javax.persistence.sql-load-script-source" value="conf/META-INF/dataload.sql"/>
+
+            <!-- generate SQL scripts with the Schema Generation -->
+            <property name="javax.persistence.schema-generation.scripts.action" value="drop-and-create"/>
+            <property name="javax.persistence.schema-generation.scripts.create-target" value="jpaCreate.ddl"/>
+            <property name="javax.persistence.schema-generation.scripts.drop-target" value="jpaDrop.ddl"/>
+        </properties>
+    </persistence-unit>
+
+</persistence>
