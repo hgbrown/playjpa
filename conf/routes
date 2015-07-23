@@ -3,25 +3,29 @@
 # ~~~~
 
 # Home page
-GET           /                     controllers.Application.index
+GET           /                             controllers.Application.index
 
 # Company
-GET           /company              controllers.CompanyController.getAll()
-POST          /company              controllers.CompanyController.create()
-PUT           /company/finance/:id  controllers.CompanyController.updateFinancialHistory(id: Long)
-PUT           /company/:id          controllers.CompanyController.update(id: Long)
-GET           /company/:id          controllers.CompanyController.get(id: Long)
-DELETE        /company/:id          controllers.CompanyController.delete(id: Long)
+GET           /company                      controllers.CompanyController.getAll()
+POST          /company                      controllers.CompanyController.create()
+PUT           /company/finance/:id          controllers.CompanyController.updateFinancialHistory(id: Long)
+PUT           /company/:id                  controllers.CompanyController.update(id: Long)
+GET           /company/:id                  controllers.CompanyController.get(id: Long)
+DELETE        /company/:id                  controllers.CompanyController.delete(id: Long)
 
 # Employee
-GET           /employee             controllers.EmployeeController.getAll()
-POST          /employee             controllers.EmployeeController.create()
-PUT           /employee/profile/:id controllers.EmployeeController.updateEmployeeProfile(id: Long)
-PUT           /employee/:id         controllers.EmployeeController.update(id: Long)
-GET           /employee/:id         controllers.EmployeeController.get(id: Long)
-DELETE        /employee/:id         controllers.EmployeeController.delete(id: Long)
+GET           /employee                     controllers.EmployeeController.getAll()
+POST          /employee                     controllers.EmployeeController.create()
+PUT           /employee/profile/:id         controllers.EmployeeController.updateEmployeeProfile(id: Long)
+PUT           /employee/:id                 controllers.EmployeeController.update(id: Long)
+GET           /employee/:id                 controllers.EmployeeController.get(id: Long)
+DELETE        /employee/:id                 controllers.EmployeeController.delete(id: Long)
+
+GET           /profile/languages                  controllers.EmployeeController.findAllSpokenLanguages()
+GET           /profile/languagecount              controllers.EmployeeController.findCountsOfLanguages()
+GET           /profile/find/:firstName/:language  controllers.EmployeeController.findByFirstNameAndLanguage(firstName : String, language : String)
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file         controllers.Assets.at(path="/public", file)
+GET           /assets/*file                 controllers.Assets.at(path="/public", file)
 
     

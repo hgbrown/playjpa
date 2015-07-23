@@ -13,6 +13,8 @@ import play.mvc.Http;
 import play.mvc.Result;
 import util.JsonMapConverter;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -111,6 +113,52 @@ public class EmployeeController extends Controller {
         JPA.em().merge(employee);
 
         return ok(Json.toJson(employee));
+    }
+
+    @Transactional(readOnly = true)
+    public static Result findByFirstNameAndLanguage(String firstName, String language) {
+        final String sql = "SELECT * from employee where first_name = '" +firstName + "' and profile->>'language' = '" +language+ "'";
+        LOG.debug("sql=[{}]", sql);
+
+        //noinspection unchecked
+        final List<Employee> employees = JPA.em().createNativeQuery(sql, Employee.class).getResultList();
+        LOG.debug("employees=[{}]", employees);
+
+        return ok(Json.toJson(employees));
+    }
+
+    @Transactional(readOnly = true)
+    public static Result findAllSpokenLanguages() {
+        final String sql = "select profile->>'language' from employee";
+        LOG.debug("sql=[{}]", sql);
+
+        //noinspection unchecked
+        final List<Object[]> list = (List<Object[]>) JPA.em().createNativeQuery(sql).getResultList();
+        LOG.debug("list=[{}]", list);
+
+        final HashSet set = new HashSet<>(list);
+        LOG.debug("set=[{}]", set);
+
+        return ok(Json.toJson(set));
+    }
+
+    @Transactional(readOnly = true)
+    public static Result findCountsOfLanguages() {
+        final String sql = "SELECT profile->>'language' AS language, count(profile->>'language') from employee GROUP BY profile->>'language'";
+        LOG.debug("sql=[{}]", sql);
+
+        //noinspection unchecked
+        final List<Object[]> list = (List<Object[]>) JPA.em().createNativeQuery(sql).getResultList();
+        LOG.debug("list=[{}]", list);
+
+        final Map<String, Integer> resultMap = new HashMap<>();
+        for(Object[] o : list) {
+            final String language = (String) o[0];
+            final Integer count = (Integer) o[1];
+            resultMap.put(language, count);
+        }
+
+        return ok(Json.toJson(resultMap));
     }
 
     private static Employee convertJsonToEmployee(JsonNode jsonNode) {
