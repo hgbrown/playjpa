@@ -40,7 +40,17 @@
         <appender-ref ref="ACCESS_FILE"/>
     </logger>
 
-    <root level="DEBUG">
+    <logger name="util" level="DEBUG" additivity="true">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="persistence" level="DEBUG" additivity="true">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="controllers" level="DEBUG" additivity="true">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="WARN">
         <appender-ref ref="CONSOLE"/>
     </root>
 

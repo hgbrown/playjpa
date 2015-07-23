@@ -11,8 +11,10 @@ import play.mvc.BodyParser;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
+import util.JsonMapConverter;
 
 import java.util.List;
+import java.util.Map;
 
 public class EmployeeController extends Controller {
 
@@ -92,6 +94,23 @@ public class EmployeeController extends Controller {
         LOG.trace("employees=[{}]", employees);
 
         return ok(Json.toJson(employees));
+    }
+
+    @Transactional
+    public static Result updateEmployeeProfile(Long id) {
+        final Employee employee = JPA.em().find(Employee.class, id);
+        LOG.debug("employee=[{}]", employee);
+
+        final JsonNode jsonNode = getEmployeeAsJsonFromRequest();
+        LOG.debug("jsonNode=[{}]", jsonNode);
+
+        final Map<String, Object> map = JsonMapConverter.toMap(jsonNode);
+        LOG.debug("map=[{}]", map);
+
+        employee.setProfile(map);
+        JPA.em().merge(employee);
+
+        return ok(Json.toJson(employee));
     }
 
     private static Employee convertJsonToEmployee(JsonNode jsonNode) {
