@@ -18,7 +18,7 @@ import javax.persistence.*;
 @TypeDefs({
         @TypeDef( name= "StringJsonObject", typeClass = StringJsonUserType.class)
 })
-public class Company {
+public class Company implements Domain<Long> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "company_id_sequence")
@@ -34,10 +34,12 @@ public class Company {
     @Type(type = "StringJsonObject")
     private String financialHistory;
 
+    @Override
     public Long getId() {
         return id;
     }
 
+    @Override
     public void setId(Long id) {
         this.id = id;
     }

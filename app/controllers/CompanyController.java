@@ -4,13 +4,14 @@ package controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import jpa.model.Company;
 import play.Logger;
-import play.db.jpa.JPA;
 import play.db.jpa.Transactional;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
+import repository.CompanyJpaRepository;
+import repository.PersistenceException;
 
 import java.util.List;
 
@@ -18,61 +19,113 @@ public class CompanyController extends Controller {
 
     static final transient Logger.ALogger LOG = Logger.of(CompanyController.class);
 
+    protected static CompanyJpaRepository repository = new CompanyJpaRepository();
+
+//    public CompanyController() {
+//        this(new CompanyJpaRepository());
+//    }
+//
+//    protected CompanyController(CompanyJpaRepository repository) {
+//        this.repository = repository;
+//    }
+
     @Transactional(readOnly = true)
     public static Result getAll() {
-        final List<Company> companies = JPA.em().createNamedQuery("Company.getAll", Company.class).getResultList();
-        LOG.debug("companies=[{}]", companies);
-
-        return ok(Json.toJson(companies));
+        try {
+            final List<Company> companies = repository.getAll();
+            try {
+                return ok(Json.toJson(companies));
+            } catch(Exception e) {
+                LOG.error("Unable to convert response back to JSON", e);
+                return internalServerError(e.getMessage());
+            }
+        } catch(PersistenceException e) {
+            LOG.error("Unable to getAll", e);
+            return badRequest(e.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)
     public static Result get(Long id) {
-        final Company company = JPA.em().find(Company.class, id);
-        LOG.debug("company=[{}]", company);
+        try {
+            final Company company = repository.get(id);
 
-        final JsonNode companyJson = Json.toJson(company);
-        LOG.debug("companyJson=[{}]", companyJson);
-
-        return ok(companyJson);
+            try {
+                return ok(Json.toJson(company));
+            } catch(Exception e) {
+                LOG.error("Unable to convert to JSON", e);
+                return internalServerError(e.getMessage());
+            }
+        } catch (PersistenceException e) {
+            LOG.error("Unable to get by id", e);
+            return badRequest(e.getMessage());
+        }
     }
 
     @Transactional
     @BodyParser.Of(BodyParser.Json.class)
     public static Result create() {
-        final JsonNode jsonNode = getRequestBodyAsJson();
-        final Company company = convertJsonToCompany(jsonNode);
-
-        if (company.getId() != null) {
-            badRequest("Cannot create a company with an id");
+        try {
+            final JsonNode jsonNode = getRequestBodyAsJson();
+            try {
+                final Company company = convertJsonToCompany(jsonNode);
+                try {
+                    final Long generatedId = repository.create(company);
+                    LOG.debug("generatedId=[{}]", generatedId);
+                    return ok("{ \"id\" : \"" + generatedId + "\"}");
+                } catch(PersistenceException e) {
+                    LOG.error("Unable to update instance", e);
+                    return badRequest(e.getMessage());
+                }
+            } catch(Exception e) {
+                LOG.error("Unable to convert JSON to company instance", e);
+                return badRequest(e.getMessage());
+            }
+        } catch(Exception e) {
+            LOG.error("Unable to get JSON from request");
+            return badRequest(e.getMessage());
         }
-
-        JPA.em().persist(company);
-        return ok();
     }
 
     @Transactional
     @BodyParser.Of(BodyParser.Json.class)
     public static Result update(Long id) {
-        final JsonNode jsonNode = getRequestBodyAsJson();
-        final Company company = convertJsonToCompany(jsonNode);
-
-        if (!id.equals(company.getId())) {
-            return badRequest("Id in url does not match id of company");
+        try {
+            final JsonNode jsonNode = getRequestBodyAsJson();
+            try {
+                final Company company = convertJsonToCompany(jsonNode);
+                try {
+                    final Company updated = repository.update(company, id);
+                    try {
+                        return ok(Json.toJson(updated));
+                    } catch(Exception e) {
+                        LOG.error("Unable to convert persisted entity back to JSON", e);
+                        return internalServerError(e.getMessage());
+                    }
+                } catch(PersistenceException e) {
+                    LOG.error("Unable to update instance", e);
+                    return badRequest(e.getMessage());
+                }
+            } catch(Exception e) {
+                LOG.error("Unable to convert JSON to company instance", e);
+                return badRequest(e.getMessage());
+            }
+        } catch(Exception e) {
+            LOG.error("Unable to get JSON from request");
+            return badRequest(e.getMessage());
         }
-
-        JPA.em().merge(company);
-        return ok();
     }
 
     @Transactional
     public static Result delete(Long id) {
-        final Company company = JPA.em().getReference(Company.class, id);
-        LOG.debug("company=[{}]", company);
-
-        if (company != null) {
-            JPA.em().remove(company);
-            return ok();
+        try {
+            final boolean removed = repository.remove(id);
+            if(removed) {
+                return ok();
+            }
+        } catch (PersistenceException e) {
+            LOG.error("Unable to remove instance", e);
+            return badRequest(e.getMessage());
         }
         return notFound();
     }
@@ -80,31 +133,17 @@ public class CompanyController extends Controller {
     @SuppressWarnings("unused")
     @Transactional(readOnly = true)
     public static Result findByName(String name, int pageIndex, int pageSize) {
-        final String queryString = "%" + name + "%";
-        LOG.debug("queryString=[{}]", queryString);
-
-        final List<Company> companies = JPA.em().createNamedQuery("Company.findByName", Company.class)
-                .setParameter("name", queryString)
-                .setFirstResult(pageIndex)
-                .setMaxResults(pageSize)
-                .getResultList();
-
-        LOG.trace("companies=[{}]", companies);
-
+        final List<Company> companies = repository.findByName(name, pageIndex, pageSize);
         return ok(Json.toJson(companies));
     }
 
     @Transactional
     public static Result updateFinancialHistory(Long id) {
-        final Company company = JPA.em().find(Company.class, id);
-        LOG.debug("company=[{}]", company);
-
         final JsonNode jsonNode = getRequestBodyAsJson();
         LOG.debug("jsonNode=[{}]", jsonNode);
 
-        company.setFinancialHistory(jsonNode.toString());
-        JPA.em().merge(company);
-        return ok();
+        final Company company = repository.updateFinancialHistory(id, jsonNode);
+        return ok(Json.toJson(company));
     }
 
     private static Company convertJsonToCompany(JsonNode jsonNode) {

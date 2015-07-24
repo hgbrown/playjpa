@@ -18,7 +18,7 @@ import java.util.Map;
 @TypeDefs({
         @TypeDef( name= "HashMapJsonObject", typeClass = HashMapJsonUserType.class)
 })
-public class Employee {
+public class Employee implements Domain<Long> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "employee_id_sequence")
@@ -34,10 +34,12 @@ public class Employee {
     @Type(type = "HashMapJsonObject")
     private Map<String, Object> profile;
 
+    @Override
     public Long getId() {
         return id;
     }
 
+    @Override
     public void setId(Long id) {
         this.id = id;
     }
