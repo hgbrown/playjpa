@@ -4,16 +4,16 @@ package controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import jpa.model.Employee;
 import play.Logger;
-import play.db.jpa.JPA;
 import play.db.jpa.Transactional;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import util.JsonMapConverter;
+import repository.EmployeeJpaRepository;
+import repository.PersistenceException;
 
-import java.util.HashMap;
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,61 +22,104 @@ public class EmployeeController extends Controller {
 
     static final transient Logger.ALogger LOG = Logger.of(EmployeeController.class);
 
+    static EmployeeJpaRepository repository = new EmployeeJpaRepository();
+
     @Transactional(readOnly = true)
     public static Result getAll() {
-        final List<Employee> employees = JPA.em().createNamedQuery("Employee.getAll", Employee.class).getResultList();
-        LOG.debug("employees=[{}]", employees);
-
-        return ok(Json.toJson(employees));
+        try {
+            final List<Employee> employees = repository.getAll();
+            try {
+                return ok(Json.toJson(employees));
+            } catch (Exception e) {
+                LOG.error("Unable to convert response back to JSON", e);
+                return internalServerError(e.getMessage());
+            }
+        } catch(PersistenceException e) {
+            LOG.error("Unable to getAll", e);
+            return badRequest(e.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)
     public static Result get(Long id) {
-        final Employee employee = JPA.em().find(Employee.class, id);
-        LOG.debug("employee=[{}]", employee);
-
-        final JsonNode employeeJson = Json.toJson(employee);
-        LOG.debug("employeeJson=[{}]", employeeJson);
-
-        return ok(employeeJson);
+        try {
+            final Employee employee = repository.get(id);
+            try {
+                return ok(Json.toJson(employee));
+            } catch(Exception e) {
+                LOG.error("Unable to convert to JSON", e);
+                return internalServerError(e.getMessage());
+            }
+        } catch (PersistenceException e) {
+            LOG.error("Unable to get by id", e);
+            return badRequest(e.getMessage());
+        }
     }
 
     @Transactional
     @BodyParser.Of(BodyParser.Json.class)
     public static Result create() {
-        final JsonNode jsonNode = getEmployeeAsJsonFromRequest();
-        final Employee employee = convertJsonToEmployee(jsonNode);
-
-        if (employee.getId() != null) {
-            badRequest("Cannot create a employee with an id");
+        try {
+            final JsonNode jsonNode = getRequestBodyAsJson();
+            try {
+                final Employee employee = convertJsonToEmployee(jsonNode);
+                try {
+                    final Long generatedId = repository.create(employee);
+                    LOG.debug("generatedId=[{}]", generatedId);
+                    return ok("{ \"id\" : \"" + generatedId + "\"}");
+                } catch(PersistenceException e) {
+                    LOG.error("Unable to update instance", e);
+                    return badRequest(e.getMessage());
+                }
+            } catch(Exception e) {
+                LOG.error("Unable to convert JSON to company instance", e);
+                return badRequest(e.getMessage());
+            }
+        } catch(Exception e) {
+            LOG.error("Unable to get JSON from request");
+            return badRequest(e.getMessage());
         }
-
-        JPA.em().persist(employee);
-        return ok();
     }
 
     @Transactional
     @BodyParser.Of(BodyParser.Json.class)
     public static Result update(Long id) {
-        final JsonNode jsonNode = getEmployeeAsJsonFromRequest();
-        final Employee employee = convertJsonToEmployee(jsonNode);
-
-        if (!id.equals(employee.getId())) {
-            return badRequest("Id in url does not match id of employee");
+        try {
+            final JsonNode jsonNode = getRequestBodyAsJson();
+            try {
+                final Employee employee = convertJsonToEmployee(jsonNode);
+                try {
+                    final Employee updated = repository.update(employee, id);
+                    try {
+                        return ok(Json.toJson(updated));
+                    } catch(Exception e) {
+                        LOG.error("Unable to convert persisted entity back to JSON", e);
+                        return internalServerError(e.getMessage());
+                    }
+                } catch(PersistenceException e) {
+                    LOG.error("Unable to update instance", e);
+                    return badRequest(e.getMessage());
+                }
+            } catch(Exception e) {
+                LOG.error("Unable to convert JSON to company instance", e);
+                return badRequest(e.getMessage());
+            }
+        } catch(Exception e) {
+            LOG.error("Unable to get JSON from request");
+            return badRequest(e.getMessage());
         }
-
-        JPA.em().merge(employee);
-        return ok();
     }
 
     @Transactional
     public static Result delete(Long id) {
-        final Employee employee = JPA.em().getReference(Employee.class, id);
-        LOG.debug("employee=[{}]", employee);
-
-        if (employee != null) {
-            JPA.em().remove(employee);
-            return ok();
+        try {
+            final boolean removed = repository.remove(id);
+            if(removed) {
+                return ok();
+            }
+        } catch (PersistenceException e) {
+            LOG.error("Unable to remove instance", e);
+            return badRequest(e.getMessage());
         }
         return notFound();
     }
@@ -84,80 +127,35 @@ public class EmployeeController extends Controller {
     @SuppressWarnings("unused")
     @Transactional(readOnly = true)
     public static Result findByName(String name, int pageIndex, int pageSize) {
-        final String queryString = "%" + name + "%";
-        LOG.debug("queryString=[{}]", queryString);
-
-        final List<Employee> employees = JPA.em().createNamedQuery("Company.findByName", Employee.class)
-                .setParameter("name", queryString)
-                .setFirstResult(pageIndex)
-                .setMaxResults(pageSize)
-                .getResultList();
-
-        LOG.trace("employees=[{}]", employees);
-
+        final List<Employee> employees = repository.findByName(name, pageIndex, pageSize);
         return ok(Json.toJson(employees));
     }
 
     @Transactional
     public static Result updateEmployeeProfile(Long id) {
-        final Employee employee = JPA.em().find(Employee.class, id);
-        LOG.debug("employee=[{}]", employee);
-
-        final JsonNode jsonNode = getEmployeeAsJsonFromRequest();
+        final JsonNode jsonNode = getRequestBodyAsJson();
         LOG.debug("jsonNode=[{}]", jsonNode);
 
-        final Map<String, Object> map = JsonMapConverter.toMap(jsonNode);
-        LOG.debug("map=[{}]", map);
-
-        employee.setProfile(map);
-        JPA.em().merge(employee);
+        final Employee employee = repository.updateEmployeeProfile(id, jsonNode);
 
         return ok(Json.toJson(employee));
     }
 
     @Transactional(readOnly = true)
     public static Result findByFirstNameAndLanguage(String firstName, String language) {
-        final String sql = "SELECT * from employee where first_name = '" +firstName + "' and profile->>'language' = '" +language+ "'";
-        LOG.debug("sql=[{}]", sql);
-
-        //noinspection unchecked
-        final List<Employee> employees = JPA.em().createNativeQuery(sql, Employee.class).getResultList();
-        LOG.debug("employees=[{}]", employees);
-
+        final List<Employee> employees = repository.findByFirstNameAndLanguage(firstName, language);
         return ok(Json.toJson(employees));
     }
 
     @Transactional(readOnly = true)
     public static Result findAllSpokenLanguages() {
-        final String sql = "select profile->>'language' from employee";
-        LOG.debug("sql=[{}]", sql);
-
-        //noinspection unchecked
-        final List<Object[]> list = (List<Object[]>) JPA.em().createNativeQuery(sql).getResultList();
-        LOG.debug("list=[{}]", list);
-
-        final HashSet set = new HashSet<>(list);
-        LOG.debug("set=[{}]", set);
-
+        final HashSet set = repository.findAllSpokenLanguages();
         return ok(Json.toJson(set));
     }
 
     @Transactional(readOnly = true)
     public static Result findCountsOfLanguages() {
-        final String sql = "SELECT profile->>'language' AS language, count(profile->>'language') from employee GROUP BY profile->>'language'";
-        LOG.debug("sql=[{}]", sql);
-
-        //noinspection unchecked
-        final List<Object[]> list = (List<Object[]>) JPA.em().createNativeQuery(sql).getResultList();
-        LOG.debug("list=[{}]", list);
-
-        final Map<String, Integer> resultMap = new HashMap<>();
-        for(Object[] o : list) {
-            final String language = (String) o[0];
-            final Integer count = (Integer) o[1];
-            resultMap.put(language, count);
-        }
-
+        final Map<String, BigInteger> resultMap = repository.findCountsOfLanguages();
         return ok(Json.toJson(resultMap));
     }
 
@@ -168,7 +166,7 @@ public class EmployeeController extends Controller {
         return employee;
     }
 
-    private static JsonNode getEmployeeAsJsonFromRequest() {
+    private static JsonNode getRequestBodyAsJson() {
         final Http.Request request = request();
         LOG.debug("request=[{}]", request);
 

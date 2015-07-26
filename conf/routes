@@ -21,9 +21,9 @@ PUT           /employee/:id                 controllers.EmployeeController.updat
 GET           /employee/:id                 controllers.EmployeeController.get(id: Long)
 DELETE        /employee/:id                 controllers.EmployeeController.delete(id: Long)
 
-GET           /profile/languages                  controllers.EmployeeController.findAllSpokenLanguages()
-GET           /profile/languagecount              controllers.EmployeeController.findCountsOfLanguages()
-GET           /profile/find/:firstName/:language  controllers.EmployeeController.findByFirstNameAndLanguage(firstName : String, language : String)
+GET           /profile/languages            controllers.EmployeeController.findAllSpokenLanguages()
+GET           /profile/languagecount        controllers.EmployeeController.findCountsOfLanguages()
+GET           /profile/find                 controllers.EmployeeController.findByFirstNameAndLanguage(firstName : String, language : String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /assets/*file                 controllers.Assets.at(path="/public", file)

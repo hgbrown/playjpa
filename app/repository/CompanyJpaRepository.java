@@ -3,12 +3,15 @@ package repository;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jpa.model.Company;
+import play.Logger;
 import play.db.jpa.JPA;
 import play.db.jpa.Transactional;
 
 import java.util.List;
 
 public class CompanyJpaRepository extends JpaRepositoryBase<Long, Company> {
+
+    static final transient Logger.ALogger LOG = Logger.of(CompanyJpaRepository.class);
 
     public CompanyJpaRepository() {
         super(Long.class, Company.class);
